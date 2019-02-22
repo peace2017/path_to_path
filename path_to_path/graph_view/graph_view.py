@@ -43,9 +43,9 @@ class GraphView(QtWidgets.QWidget):
         if QtWidgets.QDialog.Accepted == self.dialog.exec_():
 
             for idx, val in enumerate(self.settings):
-                val['file_num'] = idx
-                print('fname = ', val['widget'].fname)
-                val['desc']['Name'] = val['widget'].fname
+                # val['file_num'] = idx
+                # print('fname = ', val['widget'].fname)
+                # val['desc']['Name'] = val['widget'].fname
                 print('')
             # self.dialog.file_widget_1.fname
 
@@ -58,7 +58,7 @@ class GraphView(QtWidgets.QWidget):
             # self.dialog.file_widget_1.doubleSpinBox_Bz
 
             # self.dialog.file_widget_1.comboBox_calc
-        print(self.settings)
+
 
 def main():
     app = QtWidgets.QApplication(sys.argv)

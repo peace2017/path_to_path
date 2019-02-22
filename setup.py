@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+from path_to_path.utils import get_ui
 
 
 setup(
@@ -7,7 +8,9 @@ setup(
     author='smironenko',
     company='topcon',
     author_email='smironenko@topcom.com',
+
     packages=find_packages(),
+
     entry_points={
         'path_to_path': [
             'path_to_path = path_to_path.__init__:main',
@@ -16,6 +19,10 @@ setup(
     install_requires=[
         line.strip() for line in open('requirements.txt')] + [
         'asic_processing'],
+
+    package_data={
+        'path_to_path': get_ui()
+    },
 
     dependency_links=[
         #"git+ssh://git@mos-git.topcon.com:7999/mcrnd/asic_processing.git#egg=asic_processing"]
