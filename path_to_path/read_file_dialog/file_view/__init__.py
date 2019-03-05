@@ -15,19 +15,24 @@ class FileView(QtWidgets.QWidget):
 
         self.fname = ''
 
-        self.doubleSpinBox_Ax.setValue(1.0)
-        self.doubleSpinBox_Ay.setValue(2.0)
-        self.doubleSpinBox_Az.setValue(3.0)
-
-        self.doubleSpinBox_Bx.setValue(1.0)
-        self.doubleSpinBox_By.setValue(2.0)
-        self.doubleSpinBox_Bz.setValue(3.0)
+        self.lineEdit.setText('/media/smironenko/423661C53661BA95/TOPCON/Research/AGI-2/Report/2019_01_08_egnos_kinematic/AGI_0/1_agi0_egnos.gga')
+        self.lineEdit_2.setText('File 1')
+        self.lineEdit_Ax.setText('44,9198160966666667')
+        self.lineEdit_Ay.setText('11,007728795')
+        self.lineEdit_Az.setText('58,0493')
+        self.lineEdit_Bx.setText('44,920421265')
+        self.lineEdit_By.setText('11,0081744883333333')
+        self.lineEdit_Bz.setText('58,2422')
 
     @QtCore.pyqtSlot(bool)
     def on_pushButton_clicked(self, checked):
         self.fname = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Open file', '/home')[0]
         self.lineEdit.insert(self.fname)
+
+    @QtCore.pyqtSlot(bool)
+    def on_checkBox_clicked(self, checked):
+        print('checkbox')
 
 
 def main():

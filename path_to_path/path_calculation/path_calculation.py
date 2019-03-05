@@ -8,13 +8,14 @@ import datetime
 
 class PathCalc:
 
-    def __init__(self, file, point_A, point_B, messages):
+    def __init__(self, desc):
+        self.file = desc['Name']
+        self.point_A_global = desc['Points']['A']
+        self.point_B_global = desc['Points']['B']
+        self.messages = desc['Message']
+        self.system = desc['System']
         self.GGA = []
         self.PV = []
-        self.file = file
-        self.point_A_global = point_A
-        self.point_B_global = point_B
-        self.messages = messages
 
         self.point_A_enu = {'E': 0.0,
                             'N': 0.0,
@@ -28,7 +29,12 @@ class PathCalc:
 
         self.xtrack_AB = []
         self.time_AB = []
-        self.p2p = []
+        self.p2p_AB = []
+
+        self.xt_rms = 0.0
+        self.xt_mean = 0.0
+        self.ptp_rms = 0.0
+        self.ptp_mean = 0.0
 
         self.structurizer = structurizer.Structirizer(self.data_storage)
         self.parser_asic = parser_asic.ParserAsic(
@@ -44,6 +50,7 @@ class PathCalc:
 
         self.set_local_system()
         self.analyse()
+        self.statistic()
 
     def data_storage(self, key, data):
         if key == 'GGA':
@@ -52,21 +59,19 @@ class PathCalc:
             self.PV.append(data)
 
     def set_local_system(self):
-        if (self.point_A_global['System'] == 'BLH' and
-                self.point_B_global['System'] == 'BLH'):
-
-            temp_A = np.array([math.radians(self.point_A_global['X']),
-                               math.radians(self.point_A_global['Y']),
-                               math.radians(self.point_A_global['Z'])])
+        if (self.system == 'Lat. Lon. Alt - BLH'):
+            temp_A = np.array([math.radians(self.point_A_global['X_lat']),
+                               math.radians(self.point_A_global['Y_lon']),
+                               math.radians(self.point_A_global['Z_alt'])])
 
             local_centre = lc.Geodetic2ECEF(temp_A)
 
             lc.InitENUNED(local_centre)
 
             temp_B_ecef = lc.Geodetic2ECEF(
-                np.array([math.radians(self.point_B_global['X']),
-                          math.radians(self.point_B_global['Y']),
-                          math.radians(self.point_B_global['Z'])]))
+                np.array([math.radians(self.point_B_global['X_lat']),
+                          math.radians(self.point_B_global['Y_lon']),
+                          math.radians(self.point_B_global['Z_alt'])]))
 
             temp_B = lc.PosECEF2ENU(
                 np.array([temp_B_ecef[0],
@@ -77,19 +82,18 @@ class PathCalc:
                                 'N': temp_B[1],
                                 'U': temp_B[2]}
 
-        if (self.point_A_global['System'] == 'ECEF' and
-                self.point_B_global['System'] == 'ECEF'):
+        if (self.system == 'XYZ - ECEF'):
 
-            local_centre = {'X': self.point_A_global['X'],
-                            'Y': self.point_A_global['Y'],
-                            'Z': self.point_A_global['Z']}
+            local_centre = {'X': self.point_A_global['X_lat'],
+                            'Y': self.point_A_global['Y_lon'],
+                            'Z': self.point_A_global['Z_alt']}
 
             lc.InitENUNED(local_centre)
 
             temp_B = lc.PosECEF2ENU(
-                np.array([self.point_B_global['X'],
-                          self.point_B_global['Y'],
-                          self.point_B_global['Z']]))
+                np.array([self.point_B_global['X_lat'],
+                          self.point_B_global['Y_lon'],
+                          self.point_B_global['Z_alt']]))
 
             self.point_B_enu = {'E': temp_B[0],
                                 'N': temp_B[1],
@@ -106,7 +110,7 @@ class PathCalc:
         pos_ant_AB = []  # antenna position ENU on AB-line
         pos_ant_hor = []  # antenna position ENU aligned in horizon
 
-        if self.messages == 'GGA':
+        if self.messages == 'nmea GGA':
             lat = [math.radians(
                 lat['lat']) for lat in self.GGA if 'lat' in lat]
             lon = [math.radians(
@@ -156,7 +160,6 @@ class PathCalc:
                                     rot[2]])
 
             pos_ant_hor = np.array(pos_ant_hor)
-
             for time in pos_ant_AB[:, 3]:
                 hours = int(str(time)[:2])
                 minutes = int(str(time)[2:4])
@@ -169,16 +172,16 @@ class PathCalc:
                 [_[1] - self.point_A_enu['N'] for _ in pos_ant_hor]
 
             for i in range(len(self.xtrack_AB) - 900):
-                self.p2p.append(self.xtrack_AB[i] - self.xtrack_AB[i + 900])
+                self.p2p_AB.append(self.xtrack_AB[i] - self.xtrack_AB[i + 900])
 
-        elif self.messages == 'PV':
+        elif self.messages == 'binary PV':
             pass
 
     def statistic(self):
-        if not self.xtrack_AB:
-            xt_rms = np.std(self.xtrack_AB)
-            xt_mean = np.mean(self.xtrack_AB)
+        if self.xtrack_AB:
+            self.xt_rms = ("{0:.4f}".format(np.std(self.xtrack_AB)))
+            self.xt_mean = ("{0:.4f}".format(np.mean(self.xtrack_AB)))
 
-        if not self.p2p:
-            p2p_rms = np.std(self.p2p)
-            p2p_mean = np.mean(self.p2p)
+        if self.p2p_AB:
+            self.ptp_rms = ("{0:.4f}".format(np.std(self.p2p_AB)))
+            self.ptp_mean = ("{0:.4f}".format(np.mean(self.p2p_AB)))
