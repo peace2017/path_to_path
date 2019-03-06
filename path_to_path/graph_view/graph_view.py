@@ -5,7 +5,6 @@ import sys
 import copy
 import pyqtgraph as pg
 import re
-import time
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
 from path_to_path.read_file_dialog import read_file_dialog as dialog
 from path_to_path.path_calculation import path_calculation as path_calc
@@ -123,6 +122,7 @@ class GraphView(QtWidgets.QWidget):
                     print(self.items_desc)
 
             ptp = self.path_to_path_calc(self.items_desc)
+
             description_xt = ""
             description_ptp = ""
 

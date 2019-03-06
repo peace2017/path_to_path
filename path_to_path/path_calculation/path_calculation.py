@@ -14,8 +14,10 @@ class PathCalc:
         self.point_B_global = desc['Points']['B']
         self.messages = desc['Message']
         self.system = desc['System']
+
         self.GGA = []
         self.PV = []
+        self.RT = []
 
         self.point_A_enu = {'E': 0.0,
                             'N': 0.0,
@@ -57,6 +59,8 @@ class PathCalc:
             self.GGA.append(data)
         elif key == 'PV':
             self.PV.append(data)
+        elif key == '~~':
+            self.RT.append(data)
 
     def set_local_system(self):
         if (self.system == 'Lat. Lon. Alt - BLH'):
@@ -84,9 +88,9 @@ class PathCalc:
 
         if (self.system == 'XYZ - ECEF'):
 
-            local_centre = {'X': self.point_A_global['X_lat'],
-                            'Y': self.point_A_global['Y_lon'],
-                            'Z': self.point_A_global['Z_alt']}
+            local_centre = np.array([self.point_A_global['X_lat'],
+                                     self.point_A_global['Y_lon'],
+                                     self.point_A_global['Z_alt']])
 
             lc.InitENUNED(local_centre)
 
@@ -175,13 +179,89 @@ class PathCalc:
                 self.p2p_AB.append(self.xtrack_AB[i] - self.xtrack_AB[i + 900])
 
         elif self.messages == 'binary PV':
-            pass
+            X = [v['X'] for v in self.PV if 'X' in v]
+            Y = [v['Y'] for v in self.PV if 'Y' in v]
+            Z = [v['Z'] for v in self.PV if 'Z' in v]
+            T = [v['time'] for v in self.RT if 'time' in v]
+            for x, y, z, t in zip(X, Y, Z, T):
+                xyz = np.array([x, y, z])
+                enu = lc.PosECEF2ENU(xyz)
+
+                pos_ant.append([enu[0],
+                                enu[1],
+                                enu[2],
+                                t])
+
+            pos_ant = np.array(pos_ant)
+
+            for pos in pos_ant:
+                if(pos[0] >= self.point_A_enu['E'] and
+                   pos[0] <= self.point_B_enu['E'] and
+                   pos[1] >= self.point_A_enu['N'] and
+                   pos[1] <= self.point_B_enu['N']):
+                    pos_ant_AB.append(pos)
+
+            pos_ant_AB = np.array(pos_ant_AB)
+
+            alfa = -math.radians(self.heading_AB)
+            cos_ = math.cos(alfa)
+            sin_ = math.sin(alfa)
+
+            rotation_matrix_AB = np.array([
+                [cos_, -sin_, self.point_A_enu['E']],
+                [sin_, cos_, self.point_A_enu['N']],
+                [0, 0, 1]
+            ])
+
+            for _ in pos_ant_AB:
+                temp = np.array([_[0] - self.point_A_enu['E'],
+                                 _[1] - self.point_A_enu['N'],
+                                 1])
+
+                rot = rotation_matrix_AB.dot(temp)
+
+                pos_ant_hor.append([rot[0],
+                                    rot[1],
+                                    rot[2]])
+
+            pos_ant_hor = np.array(pos_ant_hor)
+
+            for time in pos_ant_AB[:, 3]:
+                val = self.secondsToText(time)
+
+                hours = val[0]
+                minutes = val[1]
+                sec = val[2]
+                msec = val[3]
+
+                self.time_AB.append(
+                    datetime.datetime(1970, 1, 1, hours, minutes, sec, msec))
+
+            self.xtrack_AB = \
+                [_[1] - self.point_A_enu['N'] for _ in pos_ant_hor]
+
+            for i in range(len(self.xtrack_AB) - 900):
+                self.p2p_AB.append(self.xtrack_AB[i] - self.xtrack_AB[i + 900])
 
     def statistic(self):
         if self.xtrack_AB:
-            self.xt_rms = ("{0:.4f}".format(np.std(self.xtrack_AB)))
+            self.xt_rms = ("{0:.4f}".format(np.std(self.xtrack_AB) * 2))
             self.xt_mean = ("{0:.4f}".format(np.mean(self.xtrack_AB)))
 
         if self.p2p_AB:
-            self.ptp_rms = ("{0:.4f}".format(np.std(self.p2p_AB)))
+            self.ptp_rms = ("{0:.4f}".format(np.std(self.p2p_AB) * 2))
             self.ptp_mean = ("{0:.4f}".format(np.mean(self.p2p_AB)))
+
+    def secondsToText(self, secs):
+        days = secs // 86400
+        hours = (secs - days * 86400) // 3600
+        minutes = (secs - days * 86400 - hours * 3600) // 60
+        seconds = str("{0:.2f}".format(
+            secs - days * 86400 - hours * 3600 - minutes * 60)).split('.')[0]
+        msec = str("{0:.2f}".format(
+            secs - days * 86400 - hours * 3600 - minutes * 60)).split('.')[1]
+
+        return [int(hours),
+                int(minutes),
+                int(seconds),
+                int(msec)]
