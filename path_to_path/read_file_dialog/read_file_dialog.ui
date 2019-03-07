@@ -31,7 +31,7 @@
         <x>0</x>
         <y>0</y>
         <width>872</width>
-        <height>453</height>
+        <height>481</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout_4">
@@ -109,20 +109,13 @@
      </widget>
     </widget>
    </item>
-   <item row="2" column="0">
+   <item row="1" column="0">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
      <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QCheckBox" name="checkBox">
-     <property name="text">
-      <string>Save current values for next usage</string>
      </property>
     </widget>
    </item>

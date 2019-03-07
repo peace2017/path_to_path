@@ -119,7 +119,6 @@ class GraphView(QtWidgets.QWidget):
 
                     self.items_desc.append(desc)
                     desc = copy.deepcopy(self.desc)
-                    print(self.items_desc)
 
             ptp = self.path_to_path_calc(self.items_desc)
 
